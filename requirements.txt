@@ -1,0 +1,17 @@
+pyspark
+delta-spark
+findspark
+python-dotenv==1.0.0
+psycopg2-binary==2.9.7
+fastparquet==2023.8.0
+sqlalchemy==2.0.20
+pandas==2.1.0
+confluent-kafka==2.2.0
+requests==2.31.0
+fastavro==1.8.3
+numpy==1.26.4
+jupyterlab 
+boto3 
+minio 
+pyyaml
+airbyte

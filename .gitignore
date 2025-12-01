@@ -1,0 +1,38 @@
+# --- 1. Python Compile & Cache (Rác hệ thống) ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- 2. Virtual Environment (Môi trường ảo - Nhìn hình bạn có folder này) ---
+.venv-source-github/
+.venv/
+env/
+venv/
+ENV/
+
+# --- 3. Environment Variables (BẢO MẬT TUYỆT ĐỐI) ---
+# Không bao giờ commit file chứa mật khẩu lên Git
+.env
+.env.*
+!.env.example
+
+# --- 4. Data Files (Dữ liệu lớn) ---
+# Git chỉ lưu code, không lưu data. Data nên nằm trên MinIO/S3
+*.parquet
+*.csv
+*.xlsx
+*.json
+*.log
+# Nếu bạn có thư mục chứa data riêng
+data/
+
+# --- 5. Jupyter Notebook ---
+# Bỏ qua các file checkpoint tự sinh ra khi chạy notebook
+.ipynb_checkpoints/
+
+# --- 6. IDE Settings (Cấu hình máy cá nhân) ---
+.vscode/
+.idea/
+
+.minio.sys/
