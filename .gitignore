@@ -36,3 +36,8 @@ data/
 .idea/
 
 .minio.sys/
+
+.data/
+.cache/
+*.csv
+.source-oracle/
