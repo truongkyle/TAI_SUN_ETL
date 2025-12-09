@@ -9,6 +9,6 @@ JOB ?=nyc_test.py
 spark-submit:
 	docker exec -it spark-master /opt/spark/bin/spark-submit --master spark://spark-master:7077 /opt/spark-apps/$(JOB)
 
-list-exited:
+list:
 	docker ps -a | grep Exited 
 

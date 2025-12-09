@@ -241,26 +241,29 @@ services:
     networks:
       - taisun_network
 
-  # jupyter:
-  #   build:
-  #     context: ./spark-jupyter
-  #   container_name: jupyter
-  #   ports:
-  #     - "8888:8888"
-  #   environment:
-  #     - JUPYTER_ENABLE_LAB=yes
-  #     - SPARK_MASTER=spark://spark-master:7077
-  #     - SPARK_CONF_DIR=/home/jovyan/spark-conf
-  #     - AWS_ACCESS_KEY_ID= ${MINIO_ACCESS_KEY}
-  #     - AWS_SECRET_ACCESS_KEY= ${MINIO_SECRET_KEY}
-  #   volumes:
-  #     - ./spark/conf:/home/jovyan/spark-conf
-  #     - ./spark-jupyter/notebooks:/home/jovyan/notebooks
-  #   depends_on:
-  #     - minio
-  #     - spark-master
-  #   networks:
-  #     - taisun_network
+  jupyter:
+    build:
+      context: ../spark-jupyter
+    container_name: jupyter
+    ports:
+      - "8888:8888"
+    env_file:
+      - ../.env
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_CONF_DIR=/home/jovyan/spark-conf
+      - AWS_ACCESS_KEY_ID= ${MINIO_ACCESS_KEY}
+      - AWS_SECRET_ACCESS_KEY= ${MINIO_SECRET_KEY}
+    volumes:
+      - ./spark/conf:/home/jovyan/spark-conf
+      - ./spark-jupyter/notebooks:/home/jovyan/notebooks
+    depends_on:
+      - minio
+      - spark-master
+    networks:
+      - taisun_network
+
 volumes:
   minio_storage:
   metastore_db_data:
