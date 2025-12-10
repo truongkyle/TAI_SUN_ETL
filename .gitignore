@@ -41,3 +41,6 @@ data/
 .cache/
 *.csv
 .source-oracle/
+
+platform/airflow/logs/
+platform/metabase-data/
