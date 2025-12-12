@@ -1,5 +1,35 @@
 version: '3.9'
 
+# 1. Khai báo Block cấu hình chung (DRY - Don't Repeat Yourself)
+x-airflow-common: &airflow-common
+  build: 
+    context: .
+    dockerfile: ./airflow/Dockerfile
+  env_file:
+    - ../.env
+  environment:
+    # --- Airflow Core ---
+    - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+    - AIRFLOW__CORE__FERNET_KEY=MJK0tAZlu6zOw8Ibc3oIGuJQb3W25gQmtk3CCn7bm-o=
+    - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=False
+    - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-db:5432/airflow
+    
+    # --- Spark Integration Config ---
+    # Kết nối tới Spark Master
+    - AIRFLOW_CONN_SPARK_DEFAULT=spark://spark-master:7077
+    # Đường dẫn Java & Spark (Phải khớp với Dockerfile Airflow mới)
+    - JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+    - SPARK_HOME=/opt/spark
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/logs:/opt/airflow/logs
+    - ./airflow/plugins:/opt/airflow/plugins
+    # Quan trọng: Mount code ETL để SparkSubmitOperator tìm thấy file .py
+    - ./spark/apps:/opt/spark-apps 
+  networks:
+    - taisun_network
+
 services:
   minio:
     image: minio/minio
@@ -121,8 +151,8 @@ services:
     env_file:
       - ../.env
     environment:
-      - SPARK_WORKER_MEMORY=4G
-      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=8G
+      - SPARK_WORKER_CORES=4
       - PYSPARK_PYTHON=python3
       - TZ=UTC
     command: ["/opt/spark/sbin/start-worker.sh", "spark://spark-master:7077"]
@@ -140,8 +170,27 @@ services:
     env_file:
       - ../.env
     environment:
-      - SPARK_WORKER_MEMORY=4G
-      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=8G
+      - SPARK_WORKER_CORES=4
+      - PYSPARK_PYTHON=python3
+      - TZ=UTC
+    command: ["/opt/spark/sbin/start-worker.sh", "spark://spark-master:7077"]
+    depends_on: [spark-master]
+    volumes:
+      - ../spark/conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
+      - ../spark/apps:/opt/spark-apps
+      - ../spark/logs:/opt/spark/logs
+    networks: [taisun_network]
+  
+  spark-worker-3:
+    image: my-spark-image:3.5.0
+    container_name: spark-worker-3
+    hostname: spark-worker-3
+    env_file:
+      - ../.env
+    environment:
+      - SPARK_WORKER_MEMORY=8G
+      - SPARK_WORKER_CORES=4
       - PYSPARK_PYTHON=python3
       - TZ=UTC
     command: ["/opt/spark/sbin/start-worker.sh", "spark://spark-master:7077"]
@@ -169,78 +218,47 @@ services:
 # AIRFLOW - Orchestration Layer (Production)
 # ==========================================
   airflow-init:
-    image: apache/airflow:2.9.1
+    <<: *airflow-common
     container_name: airflow-init
     entrypoint: /bin/bash
-    command: -c "airflow db init && \
-                 airflow users create \
+    command: -c "/home/airflow/.local/bin/airflow db init && \
+                 /home/airflow/.local/bin/airflow users create \
                    --username admin \
                    --firstname Air \
                    --lastname Flow \
                    --role Admin \
                    --email admin@example.com \
                    --password admin"
-    environment:
-      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__CORE__FERNET_KEY=MJK0tAZlu6zOw8Ibc3oIGuJQb3W25gQmtk3CCn7bm-o=
-      - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=False
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-db:5432/airflow
-    volumes:
-      - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/logs:/opt/airflow/logs
-      - ./airflow/plugins:/opt/airflow/plugins
-    networks:
-      - taisun_network
+    depends_on:
+      - airflow-db
 
   airflow-webserver:
-    build:
-      context: ./airflow
-    # image: apache/airflow:2.9.1
+    <<: *airflow-common
     container_name: airflow-webserver
     restart: always
     depends_on:
       - airflow-init
       - spark-master
       - hive-metastore
-    environment:
-      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__CORE__FERNET_KEY=MJK0tAZlu6zOw8Ibc3oIGuJQb3W25gQmtk3CCn7bm-o=
-      - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-db:5432/airflow
     command: webserver
     ports:
       - "8089:8080"
-    volumes:
-      - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/logs:/opt/airflow/logs
-      - ./airflow/plugins:/opt/airflow/plugins
-      -  /var/run/docker.sock:/var/run/docker.sock
-      - /usr/bin/docker:/usr/bin/docker
-    networks:
-      - taisun_network
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   airflow-scheduler:
-    build:
-      context: ./airflow
+    <<: *airflow-common
     # image: apache/airflow:2.9.1
     container_name: airflow-scheduler
     restart: always
     depends_on:
       - airflow-init
+      - airflow-db
       - spark-master
-    environment:
-      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__CORE__FERNET_KEY=MJK0tAZlu6zOw8Ibc3oIGuJQb3W25gQmtk3CCn7bm-o=
-      - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-db:5432/airflow
     command: scheduler
-    volumes:
-      - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/logs:/opt/airflow/logs
-      - ./airflow/plugins:/opt/airflow/plugins
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /usr/bin/docker:/usr/bin/docker
     networks:
       - taisun_network
 

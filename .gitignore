@@ -42,5 +42,10 @@ data/
 *.csv
 .source-oracle/
 
+
 platform/airflow/logs/
 platform/metabase-data/
+platform/airflow/libs/
+
+*.tgz
+*/libs/*.tgz
