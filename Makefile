@@ -1,5 +1,7 @@
 run-all:
 	docker compose -f platform/docker-compose.yaml --env-file ./.env up --build -d
+down:
+	docker compose -f platform/docker-compose.yaml --env-file ./.env down
 down-rm:
 	docker compose -f platform/docker-compose.yaml --env-file ./.env down -v
 build-spark:

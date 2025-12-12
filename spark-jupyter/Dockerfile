@@ -30,6 +30,9 @@ RUN curl -L -o ${SPARK_JARS_DIR}/delta-spark_2.12-3.2.0.jar \
       https://repo1.maven.org/maven2/io/delta/delta-spark_2.12/3.2.0/delta-spark_2.12-3.2.0.jar && \
     curl -L -o ${SPARK_JARS_DIR}/delta-storage-3.2.0.jar \
       https://repo1.maven.org/maven2/io/delta/delta-storage/3.2.0/delta-storage-3.2.0.jar
+
+RUN curl -L -o ${SPARK_JARS_DIR}/ojdbc8.jar \
+    https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc8/21.9.0.0/ojdbc8-21.9.0.0.jar
 # Bắt Spark load JAR Delta lúc khởi động
 ENV PYSPARK_SUBMIT_ARGS="--jars /usr/local/spark/jars/delta-spark_2.12-2.4.0.jar pyspark-shell"
 

@@ -4,6 +4,9 @@ FROM apache/spark:3.5.0
 USER root
 RUN apt-get update && apt-get install -y curl wget && rm -rf /var/lib/apt/lists/*
 
+COPY requirements.txt /requirements.txt
+RUN pip install --no-cache-dir -r /requirements.txt
+
 ENV SPARK_HOME=/opt/spark
 ENV SPARK_JARS_DIR=$SPARK_HOME/jars
 ENV PATH=$PATH:$SPARK_HOME/bin

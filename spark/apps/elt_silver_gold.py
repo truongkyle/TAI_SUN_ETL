@@ -102,11 +102,11 @@ def create_gold_sales_mart(spark):
     # 1. Đọc dữ liệu từ Silver (Delta Format)
     # Lưu ý: Tên cột đã được normalized (lowercase) ở bước Bronze->Silver
     try:
-        df_imm = spark.read.format("delta").load(f"{SILVER_BUCKET}/{REPORT_NAME}/imm_file")
-        df_imn = spark.read.format("delta").load(f"{SILVER_BUCKET}/{REPORT_NAME}/imn_file")
-        df_ima = spark.read.format("delta").load(f"{SILVER_BUCKET}/{REPORT_NAME}/ima_file")
-        df_smd = spark.read.format("delta").load(f"{SILVER_BUCKET}/{REPORT_NAME}/smd_file")
-        df_smc = spark.read.format("delta").load(f"{SILVER_BUCKET}/{REPORT_NAME}/smc_file")
+        df_imm = spark.read.format("delta").load(f"{SILVER_BUCKET}/imm_file")
+        df_imn = spark.read.format("delta").load(f"{SILVER_BUCKET}/imn_file")
+        df_ima = spark.read.format("delta").load(f"{SILVER_BUCKET}/ima_file")
+        df_smd = spark.read.format("delta").load(f"{SILVER_BUCKET}/smd_file")
+        df_smc = spark.read.format("delta").load(f"{SILVER_BUCKET}/smc_file")
     except Exception as e:
         print(f"!!! LỖI: Không đọc được bảng Silver. Chi tiết: {str(e)}")
         return
@@ -125,7 +125,7 @@ def create_gold_sales_mart(spark):
             df_imn.imn16.alias("ma_vi_tri"),
             df_imn.imn10.alias("so_luong_goc"),
             df_imm.immuser.alias("nguoi_yeu_cau"),
-            df_imm.immudo1.alias("ghi_chu_header"),
+            # df_imm.immudo1.alias("ghi_chu_header"),
             df_imn.imn20.alias("don_vi_goc"), # Cần cột này để tính quy đổi
             df_ima.imaud06.alias("brand_raw") # Cột chứa Brand dạng "NHOM/THUONGHIEU"
         )
@@ -144,7 +144,7 @@ def create_gold_sales_mart(spark):
         F.col("so_luong_goc"),
         F.col("don_vi_goc"),
         F.col("nguoi_yeu_cau"),
-        F.col("ghi_chu_header"),
+        # F.col("ghi_chu_header"),
         
         # Logic tách Brand: Lấy phần tử thứ 2 sau dấu /
         # Ví dụ: "FOOD/VISSAN" -> "VISSAN"

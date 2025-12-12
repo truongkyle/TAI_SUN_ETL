@@ -84,11 +84,14 @@ services:
     networks:
       - taisun_network
   spark-master:
+    image: my-spark-image:3.5.0
     build:
       context: ../spark
       dockerfile: ./Dockerfile
     container_name: spark-master
     hostname: spark-master
+    env_file:
+      - ../.env
     environment:
       - SPARK_MODE=master
       - SPARK_MASTER_HOST=spark-master
@@ -112,35 +115,41 @@ services:
       - taisun_network
 
   spark-worker-1:
-    image: spark-nyc:latest   # <== dùng image build từ ./spark 
+    image: my-spark-image:3.5.0   # <== dùng image build từ ./spark 
     container_name: spark-worker-1
     hostname: spark-worker-1
+    env_file:
+      - ../.env
     environment:
-      - SPARK_WORKER_MEMORY=2G
-      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=4G
+      - SPARK_WORKER_CORES=2
       - PYSPARK_PYTHON=python3
       - TZ=UTC
     command: ["/opt/spark/sbin/start-worker.sh", "spark://spark-master:7077"]
     depends_on: [spark-master]
     volumes:
-      - ./spark/conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
-      - ./spark/logs:/opt/spark/logs
+      - ../spark/conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
+      - ../spark/apps:/opt/spark-apps
+      - ../spark/logs:/opt/spark/logs
     networks: [taisun_network]
 
   spark-worker-2:
-    image: spark-nyc:latest
+    image: my-spark-image:3.5.0
     container_name: spark-worker-2
     hostname: spark-worker-2
+    env_file:
+      - ../.env
     environment:
-      - SPARK_WORKER_MEMORY=2G
-      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=4G
+      - SPARK_WORKER_CORES=2
       - PYSPARK_PYTHON=python3
       - TZ=UTC
     command: ["/opt/spark/sbin/start-worker.sh", "spark://spark-master:7077"]
     depends_on: [spark-master]
     volumes:
-      - ./spark/conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
-      - ./spark/logs:/opt/spark/logs
+      - ../spark/conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
+      - ../spark/apps:/opt/spark-apps
+      - ../spark/logs:/opt/spark/logs
     networks: [taisun_network]
   
   metabase:
@@ -185,7 +194,9 @@ services:
       - taisun_network
 
   airflow-webserver:
-    image: apache/airflow:2.9.1
+    build:
+      context: ./airflow
+    # image: apache/airflow:2.9.1
     container_name: airflow-webserver
     restart: always
     depends_on:
@@ -205,11 +216,14 @@ services:
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
       -  /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
     networks:
       - taisun_network
 
   airflow-scheduler:
-    image: apache/airflow:2.9.1
+    build:
+      context: ./airflow
+    # image: apache/airflow:2.9.1
     container_name: airflow-scheduler
     restart: always
     depends_on:
@@ -226,6 +240,7 @@ services:
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
       - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
     networks:
       - taisun_network
 
@@ -255,6 +270,7 @@ services:
       - SPARK_CONF_DIR=/home/jovyan/spark-conf
       - AWS_ACCESS_KEY_ID= ${MINIO_ACCESS_KEY}
       - AWS_SECRET_ACCESS_KEY= ${MINIO_SECRET_KEY}
+      - TZ=UTC
     volumes:
       - ./spark/conf:/home/jovyan/spark-conf
       - ./spark-jupyter/notebooks:/home/jovyan/notebooks
